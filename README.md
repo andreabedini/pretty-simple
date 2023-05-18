@@ -74,6 +74,14 @@ Just
     )
 ```
 
+If for whatever reason you're not able to incur a dependency on the `pretty-simple` library, you can simulate its behaviour by using `process` to call out to the command line executable (see below for installation):
+```hs
+pPrint :: Show a => a -> IO ()
+pPrint = putStrLn <=< readProcess "pretty-simple" [] . show
+```
+
+There's also a [web app](https://cdepillabout.github.io/pretty-simple), compiled with GHCJS, where you can play around with `pretty-simple` in your browser.
+
 ## Features
 
 - Easy-to-read

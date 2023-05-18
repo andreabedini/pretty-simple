@@ -195,9 +195,11 @@ hCheckTTY h options = liftIO $ conv <$> tty
 -- suitable for passing to any /prettyprinter/ backend.
 -- Used by 'Simple.pString' etc.
 layoutString :: OutputOptions -> String -> SimpleDocStream Style
-layoutString opts =
-  annotateStyle opts
-    . removeTrailingWhitespace
+layoutString opts = annotateStyle opts . layoutStringAbstract opts
+
+layoutStringAbstract :: OutputOptions -> String -> SimpleDocStream Annotation
+layoutStringAbstract opts =
+    removeTrailingWhitespace
     . layoutSmart defaultLayoutOptions
       {layoutPageWidth = AvailablePerLine (outputOptionsPageWidth opts) 1}
     . indent (outputOptionsInitialIndent opts)
@@ -231,15 +233,15 @@ prettyExpr opts = (if outputOptionsCompact opts then group else id) . \case
   Brackets xss -> list "[" "]" xss
   Braces xss -> list "{" "}" xss
   Parens xss -> list "(" ")" xss
-  StringLit s -> join enclose (annotate Quote "\"") $ annotate String $ pretty $
-    case outputOptionsStringStyle opts of
-      Literal -> s
-      EscapeNonPrintable -> escapeNonPrintable $ readStr s
-      DoNotEscapeNonPrintable -> readStr s
-  CharLit s -> join enclose (annotate Quote "'") $ annotate String $ pretty s
+  StringLit s -> join enclose (annotate Quote "\"") $ annotate String $ pretty $ escapeString s
+  CharLit s -> join enclose (annotate Quote "'") $ annotate String $ pretty $ escapeString s
   Other s -> pretty s
   NumberLit n -> annotate Num $ pretty n
   where
+    escapeString s = case outputOptionsStringStyle opts of
+      Literal -> s
+      EscapeNonPrintable -> escapeNonPrintable $ readStr s
+      DoNotEscapeNonPrintable -> readStr s
     readStr :: String -> String
     readStr s = fromMaybe s . readMaybe $ '"' : s ++ "\""
     list :: Doc Annotation -> Doc Annotation -> CommaSeparated [Expr]
@@ -302,6 +304,7 @@ data Annotation
   | Quote
   | String
   | Num
+  deriving (Eq, Show)
 
 -- | Replace non-printable characters with hex escape sequences.
 --
